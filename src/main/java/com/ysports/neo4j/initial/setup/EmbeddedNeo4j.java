@@ -15,11 +15,18 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 
 public class EmbeddedNeo4j {
+	public enum INDEX {
+		 USER,TEAM,LEAGUE,PLACE,CITY,COUNTRY,LOCALITY
+	}
+	private static final String ID = "id";
+	
 	private static final String DB_PATH = "/initialDB/neo4j-db";
 	private static final String SPAIN_CITIES = "/initialDB/CSV/spaincities.csv";
 	private static final String SPAIN_LOCALITIES = "/initialDB/CSV/spainlocalities.csv";
@@ -54,6 +61,7 @@ public class EmbeddedNeo4j {
         Transaction tx = graphDb.beginTx();
         try
         {
+        	IndexManager index = graphDb.index();
         	Node reference = graphDb.getReferenceNode();
         	category = graphDb.createNode();
         	reference.createRelationshipTo(category, RelTypes.ROOT);
@@ -62,12 +70,17 @@ public class EmbeddedNeo4j {
         	bowling.setProperty(NAME, "Bowling");
         	
         	category.createRelationshipTo(bowling, RelTypes.SPORT);
-        	
-        	for (String country : COUNTRIES){
+        	Index<Node> places = index.forNodes(INDEX.PLACE.name());
+        	Index<Node> countryIndex = index.forNodes(INDEX.COUNTRY.name());
+        	for (String country : COUNTRIES){				
         		Node pais = graphDb.createNode();
         		pais.setProperty(NAME, country );
         		category.createRelationshipTo(pais, RelTypes.COUNTRY);
-        		
+        		//Indexamos todos los paises para agruparlos en places
+        		places.add(pais, ID, pais.getId());
+        		places.add(pais, NAME, country);
+        		countryIndex.add(pais, ID, pais.getId());
+        		countryIndex.add(pais, NAME, country);
         		if (country.equals("Spain")){
         			extractReducedSpainData(pais);
         		}
@@ -83,6 +96,9 @@ public class EmbeddedNeo4j {
 	
 	private void extractReducedSpainData(Node places){
 		try {
+			IndexManager index = graphDb.index();
+			Index<Node> placeIndex = index.forNodes(INDEX.PLACE.name());
+			Index<Node> cityIndex = index.forNodes(INDEX.CITY.name());
 			Set<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES);
 			Set<String[]> localities = CSVDataParser.extractDataToMap(SPAIN_LOCALITIES);
 			Set<String[]> playcenters = CSVDataParser.extractDataToMap(SPAIN_PLACES);
@@ -99,6 +115,10 @@ public class EmbeddedNeo4j {
 							ciudad.setProperty(NAME, ciudades[1]);
 							places.createRelationshipTo(ciudad, RelTypes.CITY);
 							storedCities.put(ciudades[1], ciudad.getId());
+							placeIndex.add(ciudad, ID, ciudad.getId());
+							placeIndex.add(ciudad, NAME, ciudad);
+							cityIndex.add(ciudad, ID, ciudad.getId());
+							cityIndex.add(ciudad, NAME, ciudad);
 						} else {
 							ciudad = graphDb.getNodeById(idNodo);
 						}
@@ -141,12 +161,19 @@ public class EmbeddedNeo4j {
 	private Map<String, Long> populateCityNodes(Node ciudad, String locality, String[] center, Map<String, Long> storedLocalities) {
 		
 		Node localidad = null;
+		IndexManager index = graphDb.index();
+		Index<Node> localityIndex = index.forNodes(INDEX.LOCALITY.name());
+		Index<Node> placesIndex = index.forNodes(INDEX.PLACE.name());
 		Long idNodo = storedLocalities.get(locality);
 		if (idNodo == null){
 			localidad = graphDb.createNode();
 			localidad.setProperty(NAME, locality);
 			ciudad.createRelationshipTo(localidad, RelTypes.LOCALITY);
 			storedLocalities.put(locality, localidad.getId());
+			localityIndex.add(ciudad, ID, ciudad.getId());
+			localityIndex.add(ciudad, NAME, ciudad);
+			placesIndex.add(ciudad, ID, ciudad.getId());
+			placesIndex.add(ciudad, NAME, ciudad);
 			
 		} else {
 			localidad = graphDb.getNodeById(idNodo);
