@@ -20,11 +20,10 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.FileUtils;
 
+import com.ysports.neo.model.index.IndexConstants;
+
 
 public class EmbeddedNeo4j {
-	public enum INDEX {
-		 USER,TEAM,LEAGUE,PLACE,CITY,COUNTRY,LOCALITY
-	}
 	
 	private static final String DB_PATH = "/initialDB/neo4j-db";
 	private static final String SPAIN_CITIES = "/initialDB/CSV/spaincities.csv";
@@ -39,7 +38,6 @@ public class EmbeddedNeo4j {
     
     Index<Node> placeIndex;
     Index<Node> cityIndex;
-	Index<Node> placesIndex;
 	Index<Node> countryIndex;
     
     private static enum RelTypes implements RelationshipType
@@ -66,10 +64,9 @@ public class EmbeddedNeo4j {
         try
         {
         	IndexManager index = graphDb.index();
-        	placeIndex= index.forNodes(INDEX.PLACE.name());
-			cityIndex = index.forNodes(INDEX.CITY.name());
-        	placesIndex = index.forNodes(INDEX.PLACE.name());
-        	countryIndex = index.forNodes(INDEX.COUNTRY.name());
+			cityIndex = index.forNodes(IndexConstants.CITY.name());
+        	countryIndex = index.forNodes(IndexConstants.COUNTRY.name());
+        	placeIndex= index.forNodes(IndexConstants.PLACE.name());
         	Node reference = graphDb.getReferenceNode();
         	category = graphDb.createNode();
         	reference.createRelationshipTo(category, RelTypes.ROOT);
@@ -83,7 +80,7 @@ public class EmbeddedNeo4j {
         		pais.setProperty(NAME, country );
         		category.createRelationshipTo(pais, RelTypes.COUNTRY);
         		//Indexamos todos los paises para agruparlos en places
-        		placesIndex.add(pais, NAME, country.toLowerCase());
+        		placeIndex.add(pais, RelTypes.COUNTRY.name(), country.toLowerCase());
         		countryIndex.add(pais, NAME, country.toLowerCase());
         		if (country.equals("Spain")){
         			extractReducedSpainData(pais);
@@ -116,7 +113,7 @@ public class EmbeddedNeo4j {
 							ciudad.setProperty(NAME, ciudades[1]);
 							places.createRelationshipTo(ciudad, RelTypes.CITY);
 							storedCities.put(ciudades[1], ciudad.getId());
-							placeIndex.add(ciudad, NAME, ciudades[1]);
+							placeIndex.add(ciudad, RelTypes.CITY.name(), ciudades[1].toLowerCase());
 							cityIndex.add(ciudad, NAME, ciudades[1].toLowerCase());
 						} else {
 							ciudad = graphDb.getNodeById(idNodo);
