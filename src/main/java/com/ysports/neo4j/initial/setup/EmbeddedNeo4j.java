@@ -79,8 +79,6 @@ public class EmbeddedNeo4j {
         		Node pais = graphDb.createNode();
         		pais.setProperty(NAME, country );
         		category.createRelationshipTo(pais, RelTypes.COUNTRY);
-        		//Indexamos todos los paises para agruparlos en places
-        		placeIndex.add(pais, RelTypes.COUNTRY.name(), country.toLowerCase());
         		countryIndex.add(pais, NAME, country.toLowerCase());
         		if (country.equals("Spain")){
         			extractReducedSpainData(pais);
@@ -95,7 +93,7 @@ public class EmbeddedNeo4j {
         }
     }
 	
-	private void extractReducedSpainData(Node places){
+	private void extractReducedSpainData(Node pais){
 		try {
 			Set<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES);
 			Set<String[]> localities = CSVDataParser.extractDataToMap(SPAIN_LOCALITIES);
@@ -111,9 +109,9 @@ public class EmbeddedNeo4j {
 						if(idNodo == null){
 							ciudad = graphDb.createNode();
 							ciudad.setProperty(NAME, ciudades[1]);
-							places.createRelationshipTo(ciudad, RelTypes.CITY);
+							pais.createRelationshipTo(ciudad, RelTypes.CITY);
 							storedCities.put(ciudades[1], ciudad.getId());
-							placeIndex.add(ciudad, RelTypes.CITY.name(), ciudades[1].toLowerCase());
+							
 							cityIndex.add(ciudad, NAME, ciudades[1].toLowerCase());
 						} else {
 							ciudad = graphDb.getNodeById(idNodo);
@@ -121,7 +119,7 @@ public class EmbeddedNeo4j {
 						
 						for(String[] localidades : localities){
 							if (cityKey.equals(localidades[0]) && center[3].equals(localidades[1])){
-								storedLocalities = populateCityNodes(ciudad, localidades[1], center, storedLocalities);
+								storedLocalities = populateCityNodes(ciudad, localidades[1], center, storedLocalities,pais);
 		    				}
 						}
 					}
@@ -131,30 +129,8 @@ public class EmbeddedNeo4j {
 			e.printStackTrace();
 		}
 	}
-
-	private void extractSpainData(Node places)  {
-		try {
-			Set<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES);
-			Set<String[]> localities = CSVDataParser.extractDataToMap(SPAIN_LOCALITIES);
-			Set<String[]> playcenters = CSVDataParser.extractDataToMap(SPAIN_PLACES);
-			for (String[] ciudades : cities){
-				Node ciudad = graphDb.createNode();
-				String cityKey = ciudades[0];
-				ciudad.setProperty(NAME, ciudades[1]);
-				places.createRelationshipTo(ciudad, RelTypes.CITY);
-				for(String[] localidades : localities){
-					if (cityKey.equals(localidades[0])){
-    					populateCityNodes(ciudad, localidades[1], playcenters);
-    				}
-				}
-			}
-		} catch (Exception e){
-			e.printStackTrace();
-		}
-		
-	}
 	
-	private Map<String, Long> populateCityNodes(Node ciudad, String locality, String[] center, Map<String, Long> storedLocalities) {
+	private Map<String, Long> populateCityNodes(Node ciudad, String locality, String[] center, Map<String, Long> storedLocalities, Node pais) {
 		
 		Node localidad = null;
 		Long idNodo = storedLocalities.get(locality);
@@ -167,23 +143,12 @@ public class EmbeddedNeo4j {
 		} else {
 			localidad = graphDb.getNodeById(idNodo);
 		}
-		populatePlacesNodes(localidad, center);
+		populatePlacesNodes(localidad, center,pais,ciudad);
 		return storedLocalities;
 			
 	}
-
-	private void populateCityNodes(Node ciudad, String locality, Set<String[]> playcenters) {
-		Node localidad = graphDb.createNode();
-		localidad.setProperty(NAME, locality);
-		ciudad.createRelationshipTo(localidad, RelTypes.CITY);
-		for (String [] center: playcenters){
-			if (center[3].equals(locality)){
-				populatePlacesNodes(localidad, center);
-			}
-		}	
-	}
 	
-	private void populatePlacesNodes(Node localidad, String[] lugar){
+	private void populatePlacesNodes(Node localidad, String[] lugar,Node pais, Node ciudad){
 		Node place = graphDb.createNode();
 		place.setProperty(NAME, lugar[0]);
 		place.setProperty("address", lugar[1]);
@@ -193,6 +158,11 @@ public class EmbeddedNeo4j {
 		//place.setProperty("email", lugar[7]);
 		place.createRelationshipTo(localidad, RelTypes.LOCATED);
 		place.createRelationshipTo(bowling, RelTypes.PLACE);
+		placeIndex.add(place, NAME, lugar[0].toLowerCase());
+		placeIndex.add(place, RelTypes.CITY.name(), ciudad.getProperty(NAME).toString().toLowerCase());
+		placeIndex.add(place, RelTypes.COUNTRY.name(), pais.getProperty(NAME).toString().toLowerCase());
+		cityIndex.add(ciudad, RelTypes.PLACE.name(), lugar[0].toLowerCase());
+		countryIndex.add(pais, RelTypes.PLACE.name(), lugar[0].toLowerCase());
 	}
 
     private void clearDb()
