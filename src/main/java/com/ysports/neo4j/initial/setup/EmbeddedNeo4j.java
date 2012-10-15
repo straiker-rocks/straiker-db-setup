@@ -133,16 +133,16 @@ public class EmbeddedNeo4j {
 	private Map<String, Long> populateCityNodes(Node ciudad, String locality, String[] center, Map<String, Long> storedLocalities, Node pais) {
 		
 		Node localidad = null;
-		Long idNodo = storedLocalities.get(locality);
-		if (idNodo == null){
-			localidad = graphDb.createNode();
-			localidad.setProperty(NAME, locality);
-			ciudad.createRelationshipTo(localidad, RelTypes.LOCALITY);
-			storedLocalities.put(locality, localidad.getId());
-			
-		} else {
-			localidad = graphDb.getNodeById(idNodo);
-		}
+//		Long idNodo = storedLocalities.get(locality);
+//		if (idNodo == null){
+//			localidad = graphDb.createNode();
+//			localidad.setProperty(NAME, locality);
+//			ciudad.createRelationshipTo(localidad, RelTypes.LOCALITY);
+//			storedLocalities.put(locality, localidad.getId());
+//			
+//		} else {
+//			localidad = graphDb.getNodeById(idNodo);
+//		}
 		populatePlacesNodes(localidad, center,pais,ciudad);
 		return storedLocalities;
 			
@@ -156,7 +156,8 @@ public class EmbeddedNeo4j {
 		place.setProperty("phone", lugar[5]);
 		place.setProperty("website", lugar[6]);
 		//place.setProperty("email", lugar[7]);
-		place.createRelationshipTo(localidad, RelTypes.LOCATED);
+		place.createRelationshipTo(ciudad, RelTypes.LOCATED);
+		//place.createRelationshipTo(localidad, RelTypes.LOCATED);
 		place.createRelationshipTo(bowling, RelTypes.PLACE);
 		placeIndex.add(place, NAME, lugar[0].toLowerCase());
 		placeIndex.add(place, RelTypes.CITY.name(), ciudad.getProperty(NAME).toString().toLowerCase());
