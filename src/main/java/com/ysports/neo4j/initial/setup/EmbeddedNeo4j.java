@@ -155,6 +155,7 @@ public class EmbeddedNeo4j {
 		place.setProperty("pobox", lugar[2]);
 		place.setProperty("phone", lugar[5]);
 		place.setProperty("website", lugar[6]);
+		place.setProperty("tracksnum", "8");
 		//place.setProperty("email", lugar[7]);
 		place.createRelationshipTo(ciudad, RelTypes.LOCATED);
 		//place.createRelationshipTo(localidad, RelTypes.LOCATED);
