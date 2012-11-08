@@ -28,7 +28,7 @@ public class EmbeddedNeo4j {
 	private static final String DB_PATH = "/initialDB/neo4j-db";
 	private static final String SPAIN_CITIES = "/initialDB/CSV/spaincities.csv";
 	private static final String SPAIN_LOCALITIES = "/initialDB/CSV/spainlocalities.csv";
-	private static final String SPAIN_PLACES = "/initialDB/CSV/spainplaces.csv";
+	private static final String SPAIN_PLACES = "/initialDB/CSV/boleras-modify.csv";
 	private static String NAME = "name";
 	
 	private static String[] COUNTRIES = {"Spain"};
@@ -95,14 +95,12 @@ public class EmbeddedNeo4j {
 	
 	private void extractReducedSpainData(Node pais){
 		try {
-			Set<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES);
-			Set<String[]> localities = CSVDataParser.extractDataToMap(SPAIN_LOCALITIES);
-			Set<String[]> playcenters = CSVDataParser.extractDataToMap(SPAIN_PLACES);
+			List<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES,false);
+			List<String[]> playcenters = CSVDataParser.extractDataToMap(SPAIN_PLACES,true);
 			Map<String, Long> storedCities = new HashMap<String, Long>(cities.size());
-			Map<String, Long> storedLocalities = new HashMap<String, Long>(localities.size());
 			for (String[] ciudades : cities){
 				for (String [] center: playcenters){
-					if (center[4].equals(ciudades[1])){
+					if (center[5].equalsIgnoreCase(ciudades[1])){
 						Node ciudad = null;
 						Long idNodo = storedCities.get(ciudades[1]);
 						String cityKey = ciudades[0];
@@ -116,12 +114,12 @@ public class EmbeddedNeo4j {
 						} else {
 							ciudad = graphDb.getNodeById(idNodo);
 						}
-						
-						for(String[] localidades : localities){
-							if (cityKey.equals(localidades[0]) && center[3].equals(localidades[1])){
-								storedLocalities = populateCityNodes(ciudad, localidades[1], center, storedLocalities,pais);
-		    				}
-						}
+						populatePlacesNodes(null, center,pais,ciudad);
+//						for(String[] localidades : localities){
+//							if (cityKey.equals(localidades[0]) && center[3].equals(localidades[1])){
+//								storedLocalities = populateCityNodes(ciudad, localidades[1], center, storedLocalities,pais);
+//		    				}
+//						}
 					}
 				}
 			}
@@ -151,11 +149,13 @@ public class EmbeddedNeo4j {
 	private void populatePlacesNodes(Node localidad, String[] lugar,Node pais, Node ciudad){
 		Node place = graphDb.createNode();
 		place.setProperty(NAME, lugar[0]);
-		place.setProperty("address", lugar[1]);
-		place.setProperty("pobox", lugar[2]);
-		place.setProperty("phone", lugar[5]);
-		place.setProperty("website", lugar[6]);
-		place.setProperty("tracksnum", "8");
+		place.setProperty("address", lugar[1].isEmpty()? lugar[4] : lugar[1]+" "+lugar[4]);
+		place.setProperty("pobox", lugar[7]);
+		place.setProperty("phone", lugar[8]);
+		place.setProperty("website", lugar[3]);
+		place.setProperty("tracksnum", lugar[10]);
+		place.setProperty("email", lugar[9]);
+		place.setProperty("image", lugar[2]);
 		//place.setProperty("email", lugar[7]);
 		place.createRelationshipTo(ciudad, RelTypes.LOCATED);
 		//place.createRelationshipTo(localidad, RelTypes.LOCATED);
