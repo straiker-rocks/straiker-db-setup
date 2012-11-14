@@ -149,7 +149,8 @@ public class EmbeddedNeo4j {
 	private void populatePlacesNodes(Node localidad, String[] lugar,Node pais, Node ciudad){
 		Node place = graphDb.createNode();
 		place.setProperty(NAME, lugar[0]);
-		place.setProperty("address", lugar[1].isEmpty()? lugar[4] : lugar[1]+" "+lugar[4]);
+		place.setProperty("mall", lugar[1]);
+		place.setProperty("address", lugar[4]);
 		place.setProperty("pobox", lugar[7]);
 		place.setProperty("phone", lugar[8]);
 		place.setProperty("website", lugar[3]);
