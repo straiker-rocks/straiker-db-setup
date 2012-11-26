@@ -99,21 +99,21 @@ public class EmbeddedNeo4j {
 			List<String[]> playcenters = CSVDataParser.extractDataToMap(SPAIN_PLACES,true);
 			Map<String, Long> storedCities = new HashMap<String, Long>(cities.size());
 			for (String[] ciudades : cities){
+				Node ciudad = null;
+				Long idNodo = storedCities.get(ciudades[1]);
+				if(idNodo == null){
+					ciudad = graphDb.createNode();
+					ciudad.setProperty(NAME, ciudades[1]);
+					pais.createRelationshipTo(ciudad, RelTypes.CITY);
+					storedCities.put(ciudades[1], ciudad.getId());
+					
+					cityIndex.add(ciudad, NAME, ciudades[1].toLowerCase());
+				} else {
+					ciudad = graphDb.getNodeById(idNodo);
+				}
 				for (String [] center: playcenters){
 					if (center[5].equalsIgnoreCase(ciudades[1])){
-						Node ciudad = null;
-						Long idNodo = storedCities.get(ciudades[1]);
 						String cityKey = ciudades[0];
-						if(idNodo == null){
-							ciudad = graphDb.createNode();
-							ciudad.setProperty(NAME, ciudades[1]);
-							pais.createRelationshipTo(ciudad, RelTypes.CITY);
-							storedCities.put(ciudades[1], ciudad.getId());
-							
-							cityIndex.add(ciudad, NAME, ciudades[1].toLowerCase());
-						} else {
-							ciudad = graphDb.getNodeById(idNodo);
-						}
 						populatePlacesNodes(null, center,pais,ciudad);
 //						for(String[] localidades : localities){
 //							if (cityKey.equals(localidades[0]) && center[3].equals(localidades[1])){
