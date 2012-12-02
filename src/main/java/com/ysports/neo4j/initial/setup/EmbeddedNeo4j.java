@@ -26,9 +26,9 @@ import com.ysports.neo.model.index.IndexConstants;
 public class EmbeddedNeo4j {
 	
 	private static final String DB_PATH = "/initialDB/neo4j-db";
-	private static final String SPAIN_CITIES = "/initialDB/CSV/spaincities.csv";
+	private static final String SPAIN_CITIES = "/initialDB/CSV/REAL/ID_provincias.csv";
 	private static final String SPAIN_LOCALITIES = "/initialDB/CSV/spainlocalities.csv";
-	private static final String SPAIN_PLACES = "/initialDB/CSV/boleras-modify.csv";
+	private static final String SPAIN_PLACES = "/initialDB/CSV/REAL/ID_boleras.csv";
 	private static String NAME = "name";
 	
 	private static String[] COUNTRIES = {"Spain"};
@@ -95,24 +95,24 @@ public class EmbeddedNeo4j {
 	
 	private void extractReducedSpainData(Node pais){
 		try {
-			List<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES,false);
+			List<String[]> cities = CSVDataParser.extractDataToMap(SPAIN_CITIES,true);
 			List<String[]> playcenters = CSVDataParser.extractDataToMap(SPAIN_PLACES,true);
 			Map<String, Long> storedCities = new HashMap<String, Long>(cities.size());
 			for (String[] ciudades : cities){
 				Node ciudad = null;
-				Long idNodo = storedCities.get(ciudades[1]);
+				Long idNodo = storedCities.get(ciudades[0]);
 				if(idNodo == null){
 					ciudad = graphDb.createNode();
 					ciudad.setProperty(NAME, ciudades[1]);
 					pais.createRelationshipTo(ciudad, RelTypes.CITY);
-					storedCities.put(ciudades[1], ciudad.getId());
+					storedCities.put(ciudades[0], ciudad.getId());
 					
 					cityIndex.add(ciudad, NAME, ciudades[1].toLowerCase());
 				} else {
 					ciudad = graphDb.getNodeById(idNodo);
 				}
 				for (String [] center: playcenters){
-					if (center[5].equalsIgnoreCase(ciudades[1])){
+					if (center[6].equalsIgnoreCase(ciudades[0])){
 						String cityKey = ciudades[0];
 						populatePlacesNodes(null, center,pais,ciudad);
 //						for(String[] localidades : localities){
@@ -148,24 +148,26 @@ public class EmbeddedNeo4j {
 	
 	private void populatePlacesNodes(Node localidad, String[] lugar,Node pais, Node ciudad){
 		Node place = graphDb.createNode();
-		place.setProperty(NAME, lugar[0]);
-		place.setProperty("mall", lugar[1]);
-		place.setProperty("address", lugar[4]);
-		place.setProperty("pobox", lugar[7]);
-		place.setProperty("phone", lugar[8]);
-		place.setProperty("website", lugar[3]);
-		place.setProperty("tracksnum", lugar[10]);
-		place.setProperty("email", lugar[9]);
-		place.setProperty("image", lugar[2]);
+		place.setProperty("idkey", lugar[0]);
+		place.setProperty(NAME, lugar[1]);
+		place.setProperty("mall", lugar[2]);
+		place.setProperty("address", lugar[5]);
+		place.setProperty("pobox", lugar[8]);
+		place.setProperty("phone", lugar[9]);
+		place.setProperty("website", lugar[4]);
+		place.setProperty("tracksnum", lugar[11]);
+		place.setProperty("email", lugar[10]);
+		place.setProperty("image", lugar[3]);
+		place.setProperty("map", lugar[12]);
 		//place.setProperty("email", lugar[7]);
 		place.createRelationshipTo(ciudad, RelTypes.LOCATED);
 		//place.createRelationshipTo(localidad, RelTypes.LOCATED);
 		place.createRelationshipTo(bowling, RelTypes.PLACE);
-		placeIndex.add(place, NAME, lugar[0].toLowerCase());
+		placeIndex.add(place, NAME, lugar[1].toLowerCase());
 		placeIndex.add(place, RelTypes.CITY.name(), ciudad.getProperty(NAME).toString().toLowerCase());
 		placeIndex.add(place, RelTypes.COUNTRY.name(), pais.getProperty(NAME).toString().toLowerCase());
-		cityIndex.add(ciudad, RelTypes.PLACE.name(), lugar[0].toLowerCase());
-		countryIndex.add(pais, RelTypes.PLACE.name(), lugar[0].toLowerCase());
+		cityIndex.add(ciudad, RelTypes.PLACE.name(), lugar[1].toLowerCase());
+		countryIndex.add(pais, RelTypes.PLACE.name(), lugar[1].toLowerCase());
 	}
 
     private void clearDb()
