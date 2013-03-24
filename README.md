@@ -1,2 +1,2 @@
-ysports-db-setup
+straiker-db-setup
 ================
